@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nostr Articles — kind:30023</title>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --accent: #8b5cf6;
+      --accent2: #6d28d9;
+      --text: #e8e8e8;
+      --muted: #888;
+      --tag-bg: #1a1025;
+      --tag-border: #3b1f6e;
+      --tag-active: #8b5cf6;
+      --radius: 10px;
+      --card-radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header h1 span {
+      color: var(--accent);
+    }
+
+    .header-meta {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #555;
+      transition: background 0.3s;
+    }
+
+    .status-dot.connecting { background: #f59e0b; animation: pulse 1s infinite; }
+    .status-dot.connected  { background: #22c55e; }
+    .status-dot.done       { background: #8b5cf6; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .status-text {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 0;
+      min-height: calc(100vh - 61px);
+    }
+
+    aside {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 20px 16px;
+      position: sticky;
+      top: 61px;
+      height: calc(100vh - 61px);
+      overflow-y: auto;
+    }
+
+    aside h2 {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .filter-toggle {
+      display: flex;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .filter-toggle button {
+      flex: 1;
+      padding: 7px 0;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .filter-toggle button.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .filter-toggle-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .tag-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+    }
+
+    .tag-item:hover { background: var(--surface2); }
+
+    .tag-item input[type="checkbox"] {
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border: 1.5px solid var(--border);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s, border-color 0.15s;
+      position: relative;
+    }
+
+    .tag-item input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .tag-item input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 3px;
+      top: 1px;
+      width: 5px;
+      height: 8px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg);
+    }
+
+    .tag-name {
+      font-size: 0.85rem;
+      color: var(--text);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tag-count {
+      font-size: 0.72rem;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 1px 6px;
+      border-radius: 20px;
+      min-width: 22px;
+      text-align: center;
+    }
+
+    .clear-btn {
+      width: 100%;
+      margin-top: 14px;
+      padding: 8px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .clear-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    main {
+      padding: 24px;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .article-count {
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+
+    .article-count strong {
+      color: var(--text);
+    }
+
+    .articles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .article-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color 0.2s, transform 0.15s;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .article-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card-image {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+      background: var(--surface2);
+    }
+
+    .card-image-placeholder {
+      width: 100%;
+      height: 120px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1a1025 0%, #0d0d1a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      opacity: 0.5;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .card-summary {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .card-tag {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--tag-bg);
+      border: 1px solid var(--tag-border);
+      color: #a78bfa;
+    }
+
+    .card-tag.active-filter {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .author-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+
+    .author-avatar-placeholder {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), #ec4899);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .author-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .author-name {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .article-date {
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .card-link {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 4px 10px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+
+    .card-link:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .loading-state {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      gap: 16px;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state .icon {
+      font-size: 3rem;
+      margin-bottom: 12px;
+    }
+
+    .empty-state p {
+      font-size: 0.9rem;
+    }
+
+    .skeleton {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skel {
+      background: linear-gradient(90deg, var(--surface2) 25%, #252525 50%, var(--surface2) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    @media (max-width: 700px) {
+      .layout { grid-template-columns: 1fr; }
+
+      aside {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+
+      main {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡</div>
+  <h1>Nostr <span>Articles</span></h1>
+
+  <div class="header-meta">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Initialising…</span>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <h2>Hashtags</h2>
+
+    <p class="filter-toggle-label">Filter mode</p>
+
+    <div class="filter-toggle">
+      <button id="btnOr" class="active" onclick="setMode('OR')">OR</button>
+      <button id="btnAnd" onclick="setMode('AND')">AND</button>
+    </div>
+
+    <div class="tag-list" id="tagList">
+      <p style="font-size:0.8rem;color:var(--muted)">Loading tags…</p>
+    </div>
+
+    <button class="clear-btn" onclick="clearFilters()">Clear all filters</button>
+  </aside>
+
+  <main>
+    <div class="toolbar">
+      <span class="article-count" id="articleCount">Fetching articles…</span>
+    </div>
+
+    <div class="articles-grid" id="grid">
+      <div class="skeleton">
+        <div class="skel" style="height:120px"></div>
+        <div class="skel" style="height:18px;width:80%"></div>
+        <div class="skel" style="height:14px"></div>
+        <div class="skel" style="height:14px;width:60%"></div>
+      </div>
+
+      <div class="skeleton">
+        <div class="skel" style="height:120px"></div>
+        <div class="skel" style="height:18px;width:70%"></div>
+        <div class="skel" style="height:14px"></div>
+        <div class="skel" style="height:14px;width:50%"></div>
+      </div>
+
+      <div class="skeleton">
+        <div class="skel" style="height:120px"></div>
+        <div class="skel" style="height:18px;width:90%"></div>
+        <div class="skel" style="height:14px"></div>
+        <div class="skel" style="height:14px;width:65%"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const RELAYS = [
+  'wss://relay.damus.io',
+  'wss://nos.lol',
+  'wss://relay.nostr.band',
+  'wss://nostr.wine',
+  'wss://relay.snort.social',
+];
+
+const TARGET = 21;
+
+let articles = [];
+let profiles = {};
+let filterMode = 'OR';
+let activeFilters = new Set();
+let tagCounts = {};
+
+const grid = document.getElementById('grid');
+const tagList = document.getElementById('tagList');
+const articleCount = document.getElementById('articleCount');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+
+const BECH32_CHARSET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
+const BECH32_GENERATOR = [
+  0x3b6a57b2,
+  0x26508e6d,
+  0x1ea119fa,
+  0x3d4233dd,
+  0x2a1462b3
+];
+
+function bech32Polymod(values) {
+  let chk = 1;
+
+  for (let p = 0; p < values.length; ++p) {
+    const top = chk >> 25;
+    chk = (chk & 0x1ffffff) << 5 ^ values[p];
+
+    for (let i = 0; i < 5; ++i) {
+      if ((top >> i) & 1) {
+        chk ^= BECH32_GENERATOR[i];
+      }
+    }
+  }
+
+  return chk;
+}
+
+function bech32HrpExpand(hrp) {
+  const ret = [];
+
+  for (let p = 0; p < hrp.length; ++p) {
+    ret.push(hrp.charCodeAt(p) >> 5);
+  }
+
+  ret.push(0);
+
+  for (let p = 0; p < hrp.length; ++p) {
+    ret.push(hrp.charCodeAt(p) & 31);
+  }
+
+  return ret;
+}
+
+function bech32CreateChecksum(hrp, data) {
+  const values = bech32HrpExpand(hrp)
+    .concat(data)
+    .concat([0,0,0,0,0,0]);
+
+  const polymod = bech32Polymod(values) ^ 1;
+  const ret = [];
+
+  for (let i = 0; i < 6; ++i) {
+    ret.push((polymod >> (5 * (5 - i))) & 31);
+  }
+
+  return ret;
+}
+
+function bech32Encode(hrp, data) {
+  const combined = data.concat(bech32CreateChecksum(hrp, data));
+
+  return hrp + '1' + combined.map(d => BECH32_CHARSET[d]).join('');
+}
+
+function convertbits(data, frombits, tobits, pad) {
+  let acc = 0;
+  let bits = 0;
+
+  const ret = [];
+  const maxv = (1 << tobits) - 1;
+
+  for (let p = 0; p < data.length; ++p) {
+    const value = data[p];
+
+    acc = (acc << frombits) | value;
+    bits += frombits;
+
+    while (bits >= tobits) {
+      bits -= tobits;
+      ret.push((acc >> bits) & maxv);
+    }
+  }
+
+  if (pad && bits > 0) {
+    ret.push((acc << (tobits - bits)) & maxv);
+  }
+
+  return ret;
+}
+
+function hexToBytes(hex) {
+  const bytes = [];
+
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes.push(parseInt(hex.slice(i, i + 2), 16));
+  }
+
+  return bytes;
+}
+
+function encodeNaddr(kind, pubkeyHex, identifier) {
+  const tlv = [];
+
+  const idBytes = Array.from(new TextEncoder().encode(identifier));
+  tlv.push(0, idBytes.length, ...idBytes);
+
+  const pkBytes = hexToBytes(pubkeyHex);
+  tlv.push(2, pkBytes.length, ...pkBytes);
+
+  tlv.push(
+    3,
+    4,
+    (kind >> 24) & 0xff,
+    (kind >> 16) & 0xff,
+    (kind >> 8) & 0xff,
+    kind & 0xff
+  );
+
+  const data5bit = convertbits(tlv, 8, 5, true);
+
+  return bech32Encode('naddr', data5bit);
+}
+
+function buildNjumpUrl(event) {
+  const d = getTag(event.tags, 'd') || '';
+
+  try {
+    const naddr = encodeNaddr(event.kind, event.pubkey, d);
+    return `https://njump.me/${naddr}`;
+  } catch (_) {
+    return `https://njump.me/${event.id}`;
+  }
+}
+
+function setStatus(state, text) {
+  statusDot.className = 'status-dot ' + state;
+  statusText.textContent = text;
+}
+
+function fetchArticles() {
+  setStatus('connecting', 'Connecting to relays…');
+
+  const seen = new Set();
+  let closed = 0;
+  const total = RELAYS.length;
+
+  RELAYS.forEach(url => {
+    let ws;
+
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      closed++;
+      checkDone();
+      return;
+    }
+
+    const subId = 'articles_' + Math.random().toString(36).slice(2);
+
+    const timeout = setTimeout(() => {
+      try {
+        ws.close();
+      } catch (_) {}
+    }, 12000);
+
+    ws.onopen = () => {
+      setStatus('connecting', `Fetching from ${total} relays…`);
+
+      ws.send(JSON.stringify([
+        'REQ',
+        subId,
+        { kinds: [30023], limit: 30 }
+      ]));
+    };
+
+    ws.onmessage = ({ data }) => {
+      let msg;
+
+      try {
+        msg = JSON.parse(data);
+      } catch (_) {
+        return;
+      }
+
+      if (msg[0] === 'EVENT' && msg[1] === subId) {
+        const ev = msg[2];
+
+        if (seen.has(ev.id)) {
+          return;
+        }
+
+        seen.add(ev.id);
+
+        const titleTag = ev.tags.find(t => t[0] === 'title');
+
+        if (!titleTag || !titleTag[1]) {
+          return;
+        }
+
+        articles.push({
+          event: ev,
+          profile: null
+        });
+
+        updateTagCounts();
+        renderAll();
+
+        if (articles.length >= TARGET) {
+          clearTimeout(timeout);
+          ws.close();
+        }
+      }
+
+      if (msg[0] === 'EOSE') {
+        clearTimeout(timeout);
+        ws.close();
+      }
+    };
+
+    ws.onerror = () => {};
+
+    ws.onclose = () => {
+      clearTimeout(timeout);
+      closed++;
+      checkDone();
+    };
+  });
+
+  function checkDone() {
+    if (closed === total) {
+      if (articles.length === 0) {
+        setStatus('done', 'No articles found');
+
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📭</div>
+            <p>No kind:30023 articles found on these relays.</p>
+          </div>
+        `;
+      } else {
+        setStatus('done', `${articles.length} articles loaded`);
+        fetchProfiles();
+      }
+    }
+  }
+}
+
+function fetchProfiles() {
+  const pubkeys = [...new Set(articles.map(a => a.event.pubkey))];
+
+  if (pubkeys.length === 0) {
+    return;
+  }
+
+  const url = 'wss://relay.damus.io';
+
+  let ws;
+
+  try {
+    ws = new WebSocket(url);
+  } catch (e) {
+    return;
+  }
+
+  const subId = 'profiles_' + Math.random().toString(36).slice(2);
+
+  const timeout = setTimeout(() => {
+    try {
+      ws.close();
+    } catch (_) {}
+  }, 10000);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify([
+      'REQ',
+      subId,
+      {
+        kinds: [0],
+        authors: pubkeys,
+        limit: pubkeys.length
+      }
+    ]));
+  };
+
+  ws.onmessage = ({ data }) => {
+    let msg;
+
+    try {
+      msg = JSON.parse(data);
+    } catch (_) {
+      return;
+    }
+
+    if (msg[0] === 'EVENT' && msg[1] === subId) {
+      const ev = msg[2];
+
+      if (ev.kind !== 0) {
+        return;
+      }
+
+      try {
+        const meta = JSON.parse(ev.content);
+
+        if (
+          !profiles[ev.pubkey] ||
+          profiles[ev.pubkey]._ts < ev.created_at
+        ) {
+          profiles[ev.pubkey] = {
+            ...meta,
+            _ts: ev.created_at
+          };
+        }
+      } catch (_) {}
+
+      renderAll();
+    }
+
+    if (msg[0] === 'EOSE') {
+      clearTimeout(timeout);
+      ws.close();
+    }
+  };
+
+  ws.onerror = () => {};
+
+  ws.onclose = () => {
+    clearTimeout(timeout);
+    setStatus('done', `${articles.length} articles · profiles loaded`);
+    renderAll();
+  };
+}
+
+function updateTagCounts() {
+  tagCounts = {};
+
+  articles.forEach(({ event }) => {
+    event.tags
+      .filter(t => t[0] === 't' && t[1])
+      .forEach(t => {
+        const tag = t[1].toLowerCase().trim();
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+  });
+
+  renderSidebar();
+}
+
+function renderSidebar() {
+  const sorted = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 60);
+
+  if (sorted.length === 0) {
+    tagList.innerHTML =
+      '<p style="font-size:0.8rem;color:var(--muted)">No hashtags found yet…</p>';
+
+    return;
+  }
+
+  tagList.innerHTML = sorted.map(([tag, count]) => `
+    <label class="tag-item">
+      <input
+        type="checkbox"
+        ${activeFilters.has(tag) ? 'checked' : ''}
+        onchange="toggleFilter('${tag}', this.checked)"
+      />
+
+      <span class="tag-name">#${tag}</span>
+      <span class="tag-count">${count}</span>
+    </label>
+  `).join('');
+}
+
+function setMode(mode) {
+  filterMode = mode;
+
+  document
+    .getElementById('btnOr')
+    .classList.toggle('active', mode === 'OR');
+
+  document
+    .getElementById('btnAnd')
+    .classList.toggle('active', mode === 'AND');
+
+  renderAll();
+}
+
+function toggleFilter(tag, checked) {
+  if (checked) {
+    activeFilters.add(tag);
+  } else {
+    activeFilters.delete(tag);
+  }
+
+  renderAll();
+}
+
+function clearFilters() {
+  activeFilters.clear();
+  renderSidebar();
+  renderAll();
+}
+
+function articleMatchesFilter(event) {
+  if (activeFilters.size === 0) {
+    return true;
+  }
+
+  const articleTags = new Set(
+    event.tags
+      .filter(t => t[0] === 't' && t[1])
+      .map(t => t[1].toLowerCase().trim())
+  );
+
+  if (filterMode === 'OR') {
+    return [...activeFilters].some(f => articleTags.has(f));
+  }
+
+  return [...activeFilters].every(f => articleTags.has(f));
+}
+
+function getTag(tags, name) {
+  const t = tags.find(t => t[0] === name);
+  return t ? t[1] : null;
+}
+
+function formatDate(ts) {
+  const d = new Date(ts * 1000);
+
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function shortPubkey(pk) {
+  return pk.slice(0, 8) + '…' + pk.slice(-4);
+}
+
+function renderCard(article) {
+  const { event } = article;
+  const profile = profiles[event.pubkey] || null;
+
+  const title = getTag(event.tags, 'title') || 'Untitled';
+  const image = getTag(event.tags, 'image') || null;
+  const summary = getTag(event.tags, 'summary') || '';
+
+  const articleTags = event.tags
+    .filter(t => t[0] === 't' && t[1])
+    .map(t => t[1].toLowerCase().trim())
+    .slice(0, 6);
+
+  const authorName =
+    profile?.display_name ||
+    profile?.name ||
+    shortPubkey(event.pubkey);
+
+  const authorPicUrl = profile?.picture || null;
+
+  const authorInitial = authorName.charAt(0).toUpperCase();
+
+  const avatarHtml = authorPicUrl
+    ? `<img class="author-avatar" src="${escHtml(authorPicUrl)}" alt="${escHtml(authorName)}" loading="lazy" onerror="this.outerHTML='<div class=\\'author-avatar-placeholder\\'>${escHtml(authorInitial)}</div>'" />`
+    : `<div class="author-avatar-placeholder">${escHtml(authorInitial)}</div>`;
+
+  const imageHtml = image
+    ? `<img class="card-image" src="${escHtml(image)}" alt="${escHtml(title)}" loading="lazy" onerror="this.outerHTML='<div class=\\'card-image-placeholder\\'>📝</div>'" />`
+    : `<div class="card-image-placeholder">📝</div>`;
+
+  const tagsHtml = articleTags.map(tag => `
+    <span class="card-tag ${activeFilters.has(tag) ? 'active-filter' : ''}">
+      #${escHtml(tag)}
+    </span>
+  `).join('');
+
+  const njumpUrl = buildNjumpUrl(event);
+
+  return `
+    <article class="article-card">
+      ${imageHtml}
+
+      <div class="card-title">${escHtml(title)}</div>
+
+      ${summary
+        ? `<div class="card-summary">${escHtml(summary)}</div>`
+        : ''
+      }
+
+      ${tagsHtml
+        ? `<div class="card-tags">${tagsHtml}</div>`
+        : ''
+      }
+
+      <div class="card-footer">
+        ${avatarHtml}
+
+        <div class="author-info">
+          <div class="author-name">${escHtml(authorName)}</div>
+          <div class="article-date">${formatDate(event.created_at)}</div>
+        </div>
+
+        <a
+          class="card-link"
+          href="${njumpUrl}"
+          target="_blank"
+          rel="noopener"
+        >
+          Read ↗
+        </a>
+      </div>
+    </article>
+  `;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderAll() {
+  const visible = articles
+    .filter(a => articleMatchesFilter(a.event))
+    .slice(0, TARGET);
+
+  const total = articles.length;
+  const shown = visible.length;
+
+  if (activeFilters.size > 0) {
+    articleCount.innerHTML = `
+      Showing <strong>${shown}</strong>
+      of <strong>${total}</strong> articles ·
+      filter: <strong>${filterMode}</strong>
+    `;
+  } else {
+    articleCount.innerHTML =
+      `<strong>${total}</strong> article${total !== 1 ? 's' : ''} loaded`;
+  }
+
+  if (visible.length === 0 && total > 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+
+        <p>
+          No articles match the selected filters.<br>
+          Try switching to <strong>OR</strong> mode or clearing filters.
+        </p>
+      </div>
+    `;
+
+    return;
+  }
+
+  if (visible.length === 0) {
+    return;
+  }
+
+  grid.innerHTML = visible.map(a => renderCard(a)).join('');
+
+  renderSidebar();
+}
+
+fetchArticles();
+</script>
+</body>
+</html>
